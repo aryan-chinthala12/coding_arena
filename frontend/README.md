@@ -1,73 +1,115 @@
-# React + TypeScript + Vite
+# Coding Practice Platform - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+A modern web-based coding practice platform built with React, TypeScript, and Vite. Practice algorithmic problems with an integrated code editor, test runner, and submission system.
 
-Currently, two official plugins are available:
+## Features
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+- Browse and filter coding problems by difficulty and category
+- Interactive Monaco code editor with syntax highlighting
+- Multi-language support (Python, C, C++, Java)
+- Resizable panels for optimal workspace layout
+- Run code with sample test cases or custom input
+- Submit solutions for full test case evaluation
+- Real-time console output with test results
+- Error boundaries for graceful error handling
+- Responsive design with loading states and skeleton screens
 
-## React Compiler
+## Tech Stack
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+- **React 19** - UI framework
+- **TypeScript** - Type safety
+- **Vite** - Build tool and dev server
+- **React Router** - Client-side routing
+- **Monaco Editor** - Code editor (VS Code's editor)
+- **Tailwind CSS** - Styling
+- **React Resizable Panels** - Resizable layout
 
-## Expanding the ESLint configuration
+## Getting Started
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+### Prerequisites
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+- Node.js 18+ and npm
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+### Installation
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+```bash
+npm install
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+### Development
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+```bash
+npm run dev
+```
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+The app will be available at `http://localhost:5173`
+
+### Build
+
+```bash
+npm run build
+```
+
+### Preview Production Build
+
+```bash
+npm run preview
+```
+
+## Project Structure
+
+```
+frontend/
+├── components/          # Reusable UI components
+│   ├── CodeEditorPanel.tsx
+│   ├── ConsolePanel.tsx
+│   ├── ErrorBoundary.tsx
+│   └── ProblemPanel.tsx
+├── lib/                 # Utilities and services
+│   ├── data-service.ts  # API and data fetching
+│   └── mock-api.ts      # Mock API for development
+├── pages/               # Route pages
+│   ├── Problems.tsx     # Problems listing
+│   ├── ProblemDetail.tsx # Problem solver view
+│   └── NotFound.tsx     # 404 page
+├── public/
+│   └── data/            # Static JSON data
+│       ├── problems.json
+│       └── starter-code.json
+└── src/
+    ├── App.tsx          # Root component with routing
+    ├── main.tsx         # Entry point
+    └── index.css        # Global styles
+```
+
+## Available Routes
+
+- `/` - Redirects to problems list
+- `/problems` - Browse all problems
+- `/problem/:id` - Solve a specific problem
+- `/not-found` - 404 page
+
+## API Integration
+
+The frontend expects a judge server API with the following endpoints:
+
+- `POST /api/run` - Run code with sample test cases
+- `POST /api/submit` - Submit code for evaluation
+
+See `lib/data-service.ts` for payload structures.
+
+## Code Quality
+
+### Linting
+
+```bash
+npm run lint
+```
+
+### Type Checking
+
+TypeScript is configured with strict mode. Run type checking with:
+
+```bash
+npx tsc --noEmit
 ```
