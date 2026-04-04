@@ -1,0 +1,21 @@
+# IDE / Editor specific
+.kiro
+.idea
+.vscode
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Environment files
+.env
+.env.*
+
+# Node
+node_modules/
+
+# Build outputs
+dist/
+build/
+.next/
+out/
