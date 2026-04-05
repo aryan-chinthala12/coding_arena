@@ -212,6 +212,7 @@ function validateProblemId(problemId: string): string {
   }
   
   // Sanitize: reject IDs with special characters or path traversal attempts
+  // eslint-disable-next-line no-control-regex
   if (/[<>:"|?*\x00-\x1f]/.test(trimmed) || trimmed.includes('..')) {
     throw new Error('Problem ID contains invalid characters')
   }
