@@ -212,7 +212,7 @@ function validateProblemId(problemId: string): string {
   }
   
   // Sanitize: reject IDs with special characters or path traversal attempts
-  if (/[<>:"\/\\|?*\x00-\x1f]/.test(trimmed) || trimmed.includes('..')) {
+  if (/[<>:"|?*\x00-\x1f]/.test(trimmed) || trimmed.includes('..')) {
     throw new Error('Problem ID contains invalid characters')
   }
   
@@ -259,7 +259,7 @@ function validateSourceCode(source: string): string {
   }
   
   // Sanitize: remove any null bytes or other control characters that could cause issues
-  const sanitized = trimmed.replace(/\x00/g, '')
+  const sanitized = trimmed.replace(/\0/g, '')
   
   return sanitized
 }
