@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { Panel, Group, Separator } from 'react-resizable-panels'
 import { ProblemPanel } from '@/components/ProblemPanel'
@@ -11,6 +11,19 @@ import {
   type Problem,
   type LanguageTemplate,
 } from '@/lib/data-service'
+
+// Type definitions for API responses
+interface TestCase {
+  name: string
+  input: string
+  expected_output: string
+  actual_output: string
+}
+
+interface TestResult {
+  status: string
+  message: string
+}
 
 export default function ProblemDetail() {
   const { id: problemId } = useParams<{ id: string }>()
@@ -34,7 +47,7 @@ export default function ProblemDetail() {
   const [submissionId, setSubmissionId] = useState<string>('')
 
   // Load problem data and starter code templates
-  const loadData = async () => {
+  const loadData = useCallback(async () => {
     if (!problemId) return
 
     setIsLoading(true)
@@ -77,11 +90,11 @@ export default function ProblemDetail() {
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [problemId, navigate])
 
   useEffect(() => {
     loadData()
-  }, [problemId]) // Only reload if problemId changes
+  }, [loadData])
 
   // Handle language change
   const handleLanguageChange = (newLanguage: string) => {
@@ -142,7 +155,7 @@ export default function ProblemDetail() {
       const messages: ConsoleMessage[] = []
 
       if (result.test_cases) {
-        result.test_cases.forEach((testCase: any) => {
+        result.test_cases.forEach((testCase: TestCase) => {
           messages.push({
             type: 'info',
             message: `<div class="space-y-2">
@@ -235,7 +248,7 @@ export default function ProblemDetail() {
       const messages: ConsoleMessage[] = []
 
       if (result.test_results) {
-        result.test_results.forEach((test: any, index: number) => {
+        result.test_results.forEach((test: TestResult, index: number) => {
           messages.push({
             type: test.status === 'AC' ? 'success' : 'error',
             message: `Test Case ${index + 1}: ${test.status} - ${test.message}`,
