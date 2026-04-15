@@ -46,6 +46,10 @@ func TestSubmit_ValidPython(t *testing.T) {
 	if !strings.HasPrefix(resp.ID, "sub_") {
 		t.Fatalf("expected ID prefix sub_, got %s", resp.ID)
 	}
+	// 128-bit ID = 16 bytes = 32 hex chars + "sub_" prefix = 36 chars total
+	if len(resp.ID) != 36 {
+		t.Fatalf("expected 128-bit ID (36 chars with prefix), got %d chars: %s", len(resp.ID), resp.ID)
+	}
 }
 
 func TestSubmit_ValidCpp(t *testing.T) {
@@ -138,7 +142,7 @@ func twoSum(nums []int, target int) []int {
 
 func TestSubmit_LargePayload(t *testing.T) {
 	r := setupRouter()
-	// Simulate a large submission (~10KB of code)
+	// Simulate a large but valid submission (~20KB of code, under 512KB limit)
 	var sb strings.Builder
 	sb.WriteString("def solve():\n")
 	for i := 0; i < 500; i++ {
@@ -156,6 +160,103 @@ func TestSubmit_LargePayload(t *testing.T) {
 		t.Fatalf("expected 202, got %d: %s", w.Code, w.Body.String())
 	}
 }
+
+// --- Security-specific tests ---
+
+func TestSubmit_CodeTooLarge(t *testing.T) {
+	r := setupRouter()
+	// Generate code exceeding 512 KB
+	bigCode := strings.Repeat("x", 512*1024+1)
+	payload := model.SubmitRequest{Code: bigCode, Language: "python", ProblemID: "test"}
+	b, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/submit", bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for oversized code, got %d", w.Code)
+	}
+}
+
+func TestSubmit_InvalidProblemID_PathTraversal(t *testing.T) {
+	r := setupRouter()
+	body := `{"code":"print(1)","language":"python","problem_id":"../../etc/passwd"}`
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for path traversal problem_id, got %d", w.Code)
+	}
+}
+
+func TestSubmit_InvalidProblemID_Injection(t *testing.T) {
+	r := setupRouter()
+	body := `{"code":"print(1)","language":"python","problem_id":"test'; DROP TABLE--"}`
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for injection problem_id, got %d", w.Code)
+	}
+}
+
+func TestSubmit_InvalidProblemID_TooLong(t *testing.T) {
+	r := setupRouter()
+	longID := strings.Repeat("a", 65)
+	payload := model.SubmitRequest{Code: "print(1)", Language: "python", ProblemID: longID}
+	b, _ := json.Marshal(payload)
+	req := httptest.NewRequest(http.MethodPost, "/submit", bytes.NewReader(b))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for too-long problem_id, got %d", w.Code)
+	}
+}
+
+func TestSubmit_InvalidProblemID_UpperCase(t *testing.T) {
+	r := setupRouter()
+	body := `{"code":"print(1)","language":"python","problem_id":"TwoSum"}`
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400 for uppercase problem_id, got %d", w.Code)
+	}
+}
+
+func TestSubmit_UnsupportedLanguageNoReflection(t *testing.T) {
+	r := setupRouter()
+	body := `{"code":"print(1)","language":"<script>alert(1)</script>","problem_id":"two-sum"}`
+	req := httptest.NewRequest(http.MethodPost, "/submit", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+
+	r.ServeHTTP(w, req)
+
+	if w.Code != http.StatusBadRequest {
+		t.Fatalf("expected 400, got %d", w.Code)
+	}
+	// Ensure user input is NOT reflected in the response
+	if strings.Contains(w.Body.String(), "<script>") {
+		t.Fatal("user input was reflected in error response — XSS risk")
+	}
+}
+
+// --- Existing negative tests ---
 
 func TestSubmit_MissingCode(t *testing.T) {
 	r := setupRouter()
