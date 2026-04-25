@@ -7,8 +7,8 @@ import (
 	"net/http"
 	"regexp"
 
-	"github.com/Aerosane/coding_arena/backend/adapter"
-	"github.com/Aerosane/coding_arena/backend/model"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/adapter"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/model"
 	"github.com/gin-gonic/gin"
 )
 

@@ -1,4 +1,4 @@
-module github.com/Aerosane/coding_arena/backend
+module github.com/GCET-Open-Source-Foundation/coding_arena/backend
 
 go 1.25.8
 

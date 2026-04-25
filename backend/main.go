@@ -10,10 +10,10 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/Aerosane/coding_arena/backend/adapter"
-	"github.com/Aerosane/coding_arena/backend/bridge"
-	"github.com/Aerosane/coding_arena/backend/handler"
-	"github.com/Aerosane/coding_arena/backend/middleware"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/adapter"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/bridge"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/handler"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/middleware"
 	"github.com/gin-gonic/gin"
 )
 

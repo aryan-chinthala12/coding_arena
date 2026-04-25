@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/Aerosane/coding_arena/backend/bridge"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/bridge"
 )
 
 // LanguageMap maps frontend language names to DMOJ executor IDs.
@@ -110,7 +110,15 @@ func (a *JudgeAdapter) Submit(req SubmissionRequest) (*SubmissionResult, error) 
 		return nil, fmt.Errorf("judge submission failed: %w", err)
 	}
 
-	// Convert bridge result to API result
+	result := mapResult(raw)
+
+	log.Printf("[ADAPTER] Result: status=%s points=%.1f/%.1f time=%.3fs mem=%dKB cases=%d",
+		result.Status, result.Points, result.TotalPoints, result.TotalTime, result.MaxMemory, len(result.Cases))
+
+	return result, nil
+}
+
+func mapResult(raw *bridge.SubmissionResult) *SubmissionResult {
 	result := &SubmissionResult{
 		Status:       raw.Status,
 		CompileError: raw.CompileError,
@@ -132,8 +140,5 @@ func (a *JudgeAdapter) Submit(req SubmissionRequest) (*SubmissionResult, error) 
 		})
 	}
 
-	log.Printf("[ADAPTER] Result: status=%s points=%.1f/%.1f time=%.3fs mem=%dKB cases=%d",
-		result.Status, result.Points, result.TotalPoints, result.TotalTime, result.MaxMemory, len(result.Cases))
-
-	return result, nil
+	return result
 }
