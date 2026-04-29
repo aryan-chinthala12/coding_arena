@@ -12,6 +12,7 @@ import (
 
 	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/adapter"
 	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/bridge"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/config"
 	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/handler"
 	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/middleware"
 	"github.com/gin-gonic/gin"
@@ -56,8 +57,14 @@ func main() {
 	}
 	defer b.Stop()
 
+	// Load Judge Config
+	cfg, err := config.LoadJudgeConfig()
+	if err != nil {
+		log.Fatalf("failed to load judge config: %v", err)
+	}
+
 	// Create adapter and inject into handler
-	adapt := adapter.New(b)
+	adapt := adapter.New(b, cfg)
 	handler.SetAdapter(adapt)
 
 	// --- Router setup (no default middleware — we add our own) ---

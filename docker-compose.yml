@@ -25,7 +25,7 @@ services:
   judge:
     build:
       context: ./judge-server
-      dockerfile: .docker/tier3/Dockerfile
+      dockerfile: .docker/arena/Dockerfile
     volumes:
       - ./judge-config/.dmojrc:/home/judge/.dmojrc:ro
       - ./judge-config/problems:/problems:ro

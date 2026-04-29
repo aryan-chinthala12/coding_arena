@@ -3,6 +3,7 @@ package bridge
 import (
 	"bytes"
 	"compress/zlib"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"io"
@@ -118,7 +119,7 @@ func TestBridge_FullSubmission(t *testing.T) {
 	}
 	ch := make(chan submitResult, 1)
 	go func() {
-		r, err := b.Submit("aplusb", "PY3", "print(sum(map(int,input().split())))", 2.0, 262144, false)
+		r, err := b.Submit(context.Background(), "aplusb", "PY3", "print(sum(map(int,input().split())))", 2.0, 262144, false)
 		ch <- submitResult{r, err}
 	}()
 
@@ -217,7 +218,7 @@ func TestBridge_CompileError(t *testing.T) {
 
 	ch := make(chan *SubmissionResult, 1)
 	go func() {
-		r, _ := b.Submit("aplusb", "CPP17", "int main( {}", 2.0, 262144, false)
+		r, _ := b.Submit(context.Background(), "aplusb", "CPP17", "int main( {}", 2.0, 262144, false)
 		ch <- r
 	}()
 
@@ -260,7 +261,7 @@ func TestBridge_WrongAnswer(t *testing.T) {
 
 	ch := make(chan *SubmissionResult, 1)
 	go func() {
-		r, _ := b.Submit("aplusb", "PY3", "print(0)", 2.0, 262144, false)
+		r, _ := b.Submit(context.Background(), "aplusb", "PY3", "print(0)", 2.0, 262144, false)
 		ch <- r
 	}()
 
@@ -305,7 +306,7 @@ func TestBridge_NoJudge(t *testing.T) {
 		t.Fatal("expected no judges")
 	}
 
-	_, err := b.Submit("aplusb", "PY3", "print(1)", 2.0, 262144, false)
+	_, err := b.Submit(context.Background(), "aplusb", "PY3", "print(1)", 2.0, 262144, false)
 	if err == nil {
 		t.Fatal("expected error when no judge available")
 	}

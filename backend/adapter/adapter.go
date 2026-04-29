@@ -1,21 +1,24 @@
 package adapter
 
 import (
+	"context"
 	"fmt"
 	"log"
+	"time"
 
 	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/bridge"
+	"github.com/GCET-Open-Source-Foundation/coding_arena/backend/config"
 )
 
 // LanguageMap maps frontend language names to DMOJ executor IDs.
 // Uses a fallback chain per language — the adapter tries the first available executor.
-// JAVA8 is used as primary since tier1/tier2 images only ship Java 8;
-// tier3 images include JAVA (Java 9+) and GO.
+// JAVA (Java 25) is primary since the arena image ships Java 25;
+// JAVA8 is the fallback for images that only ship Java 8.
 var LanguageMap = map[string][]string{
 	"python": {"PY3"},
 	"cpp":    {"CPP17", "CPP14", "CPP11"},
 	"c":      {"C11", "C"},
-	"java":   {"JAVA8", "JAVA"},
+	"java":   {"JAVA", "JAVA8"},
 	"go":     {"GO"},
 }
 
@@ -36,14 +39,24 @@ const DefaultTimeLimit = 2.0
 // DefaultMemoryLimit is the default memory limit in kilobytes (256 MB).
 const DefaultMemoryLimit = 262144
 
+// TimeoutOverhead is the additional time allowed for queueing and bridge overhead.
+var TimeoutOverhead = 60 * time.Second
+
+// JudgeBridge defines the operations required from a judge bridge.
+type JudgeBridge interface {
+	Submit(ctx context.Context, problemID, language, source string, timeLimit float64, memoryLimit int64, shortCircuit bool) (*bridge.SubmissionResult, error)
+	HasJudge() bool
+}
+
 // JudgeAdapter translates between the backend API and the DMOJ bridge.
 type JudgeAdapter struct {
-	bridge *bridge.Bridge
+	bridge JudgeBridge
+	cfg    *config.JudgeConfig
 }
 
 // New creates a new JudgeAdapter backed by the given bridge.
-func New(b *bridge.Bridge) *JudgeAdapter {
-	return &JudgeAdapter{bridge: b}
+func New(b JudgeBridge, cfg *config.JudgeConfig) *JudgeAdapter {
+	return &JudgeAdapter{bridge: b, cfg: cfg}
 }
 
 // Available returns true if at least one judge is connected.
@@ -101,12 +114,29 @@ func (a *JudgeAdapter) Submit(req SubmissionRequest) (*SubmissionResult, error) 
 		memoryLimit = DefaultMemoryLimit
 	}
 
+	if a.cfg != nil {
+		if a.cfg.TimeLimit > 0 {
+			timeLimit = a.cfg.TimeLimit.Seconds()
+		}
+		if a.cfg.MemoryLimit > 0 {
+			memoryLimit = int64(a.cfg.MemoryLimit * 1024)
+		}
+	}
+
 	log.Printf("[ADAPTER] Submitting problem=%s lang=%s->%s time=%.1fs mem=%dKB",
 		req.ProblemID, req.Language, executorID, timeLimit, memoryLimit)
 
-	// Send to bridge (blocks until grading completes)
-	raw, err := a.bridge.Submit(req.ProblemID, executorID, req.Source, timeLimit, memoryLimit, req.ShortCircuit)
+	effectiveSubmissionTimeout := time.Duration(timeLimit*float64(time.Second)) + TimeoutOverhead
+	ctx, cancel := context.WithTimeout(context.Background(), effectiveSubmissionTimeout)
+	defer cancel()
+
+	raw, err := a.bridge.Submit(ctx, req.ProblemID, executorID, req.Source, timeLimit, memoryLimit, req.ShortCircuit)
 	if err != nil {
+		if err == context.DeadlineExceeded {
+			return &SubmissionResult{
+				Status: "IE",
+			}, nil
+		}
 		return nil, fmt.Errorf("judge submission failed: %w", err)
 	}
 

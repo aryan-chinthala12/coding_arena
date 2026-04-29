@@ -3,6 +3,7 @@ package bridge
 import (
 	"bytes"
 	"compress/zlib"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"fmt"
@@ -11,7 +12,6 @@ import (
 	"net"
 	"sync"
 	"sync/atomic"
-	"time"
 )
 
 // Packet represents a generic DMOJ judge protocol packet.
@@ -163,8 +163,8 @@ func (b *Bridge) HasJudge() bool {
 }
 
 // Submit sends a submission to an available judge and waits for the result.
-// It blocks until the judge finishes grading or the context-derived timeout expires.
-func (b *Bridge) Submit(problemID, language, source string, timeLimit float64, memoryLimit int64, shortCircuit bool) (*SubmissionResult, error) {
+// It blocks until the judge finishes grading or the context expires.
+func (b *Bridge) Submit(ctx context.Context, problemID, language, source string, timeLimit float64, memoryLimit int64, shortCircuit bool) (*SubmissionResult, error) {
 	judge := b.pickJudge()
 	if judge == nil {
 		return nil, fmt.Errorf("no judge available")
@@ -197,13 +197,12 @@ func (b *Bridge) Submit(problemID, language, source string, timeLimit float64, m
 	log.Printf("[BRIDGE] Sent submission %d to judge %q (problem=%s, lang=%s)",
 		subID, judge.name, problemID, language)
 
-	// Wait for result with timeout (time limit + generous overhead)
-	timeout := time.Duration(timeLimit*float64(time.Second)) + 60*time.Second
+	// Wait for result or context cancellation
 	select {
 	case result := <-resultCh:
 		return result, nil
-	case <-time.After(timeout):
-		return nil, fmt.Errorf("judge timeout after %v", timeout)
+	case <-ctx.Done():
+		return nil, ctx.Err()
 	case <-b.done:
 		return nil, fmt.Errorf("bridge shutting down")
 	}
