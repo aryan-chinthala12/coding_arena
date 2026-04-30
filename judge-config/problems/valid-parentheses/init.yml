@@ -1,0 +1,12 @@
+test_cases:
+- {in: 1.in, out: 1.out, points: 2}
+- {in: 2.in, out: 2.out, points: 2}
+- {in: 3.in, out: 3.out, points: 2}
+- {in: 4.in, out: 4.out, points: 2}
+- {in: 5.in, out: 5.out, points: 5}
+- {in: 6.in, out: 6.out, points: 3}
+- {in: 7.in, out: 7.out, points: 2}
+- {in: 8.in, out: 8.out, points: 2}
+
+time_limit: 1.0
+memory_limit: 262144
