@@ -18,7 +18,7 @@ func TestResolveExecutor(t *testing.T) {
 		{"python", "PY3", false},
 		{"cpp", "CPP17", false},
 		{"c", "C11", false},
-		{"java", "JAVA8", false},
+		{"java", "JAVA", false},
 		{"go", "GO", false},
 		{"unknown", "", true},
 	}
