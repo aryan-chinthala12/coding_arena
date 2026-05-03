@@ -47,7 +47,6 @@ func CORS(cfg CORSConfig) gin.HandlerFunc {
 			c.Header("Vary", "Origin")
 		}
 
-		// Handle preflight
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)
 			return

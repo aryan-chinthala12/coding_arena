@@ -106,8 +106,7 @@ type Bridge struct {
 	mu     sync.Mutex
 	judges map[string]*JudgeConn // name -> connection
 
-	// Pending submissions awaiting results.
-	pending   sync.Map // submissionID (int64) -> chan *SubmissionResult
+	pending   sync.Map
 	nextID    atomic.Int64
 	closeOnce sync.Once
 	done      chan struct{}
@@ -172,12 +171,10 @@ func (b *Bridge) Submit(ctx context.Context, problemID, language, source string,
 
 	subID := b.nextID.Add(1) - 1
 
-	// Create result channel
 	resultCh := make(chan *SubmissionResult, 1)
 	b.pending.Store(subID, resultCh)
 	defer b.pending.Delete(subID)
 
-	// Send submission-request
 	pkt := Packet{
 		"name":          "submission-request",
 		"submission-id": subID,
@@ -197,7 +194,6 @@ func (b *Bridge) Submit(ctx context.Context, problemID, language, source string,
 	log.Printf("[BRIDGE] Sent submission %d to judge %q (problem=%s, lang=%s)",
 		subID, judge.name, problemID, language)
 
-	// Wait for result or context cancellation
 	select {
 	case result := <-resultCh:
 		return result, nil
@@ -207,8 +203,6 @@ func (b *Bridge) Submit(ctx context.Context, problemID, language, source string,
 		return nil, fmt.Errorf("bridge shutting down")
 	}
 }
-
-// --- internal ---
 
 func (b *Bridge) acceptLoop() {
 	for {
@@ -238,7 +232,6 @@ func (b *Bridge) handleJudge(conn net.Conn) {
 		log.Printf("[BRIDGE] Judge %q disconnected", jc.name)
 	}()
 
-	// Read handshake
 	pkt, err := jc.recv()
 	if err != nil {
 		log.Printf("[BRIDGE] Handshake read error: %v", err)
@@ -261,7 +254,6 @@ func (b *Bridge) handleJudge(conn net.Conn) {
 
 	jc.name = judgeID
 
-	// Send handshake-success
 	if err := jc.send(Packet{"name": "handshake-success"}); err != nil {
 		log.Printf("[BRIDGE] Handshake response error: %v", err)
 		return
@@ -273,7 +265,6 @@ func (b *Bridge) handleJudge(conn net.Conn) {
 	b.judges[judgeID] = jc
 	b.mu.Unlock()
 
-	// Read packets from judge forever
 	for {
 		pkt, err := jc.recv()
 		if err != nil {
@@ -292,7 +283,7 @@ func (b *Bridge) handlePacket(jc *JudgeConn, pkt Packet) {
 
 	switch name {
 	case "ping-response":
-		// ignore
+		// noop
 
 	case "submission-acknowledged":
 		log.Printf("[BRIDGE] Judge %q acknowledged submission %d", jc.name, subID)
@@ -339,7 +330,6 @@ func (b *Bridge) handlePacket(jc *JudgeConn, pkt Packet) {
 				cr.Feedback = fb
 			}
 
-			// Store case in pending accumulator
 			b.accumulateCase(subID, cr)
 		}
 
@@ -347,7 +337,7 @@ func (b *Bridge) handlePacket(jc *JudgeConn, pkt Packet) {
 		b.finalizeResult(subID)
 
 	case "batch-begin", "batch-end":
-		// informational, no action needed
+		// noop
 
 	case "internal-error":
 		msg, _ := pkt["message"].(string)
@@ -393,7 +383,6 @@ func (b *Bridge) finalizeResult(subID int64) {
 		Cases:        *cases,
 	}
 
-	// Aggregate stats
 	worstStatus := 0
 	for _, c := range *cases {
 		result.TotalTime += c.Time
@@ -434,8 +423,6 @@ func (b *Bridge) pickJudge() *JudgeConn {
 	return nil
 }
 
-// --- JudgeConn I/O ---
-
 func (jc *JudgeConn) send(pkt Packet) error {
 	payload, err := json.Marshal(pkt)
 	if err != nil {
@@ -459,7 +446,6 @@ func (jc *JudgeConn) send(pkt Packet) error {
 	jc.mu.Lock()
 	defer jc.mu.Unlock()
 
-	// Write 4-byte big-endian length + compressed data
 	if err := binary.Write(jc.conn, binary.BigEndian, uint32(len(compressed))); err != nil {
 		return fmt.Errorf("write length: %w", err)
 	}
@@ -471,7 +457,6 @@ func (jc *JudgeConn) send(pkt Packet) error {
 }
 
 func (jc *JudgeConn) recv() (Packet, error) {
-	// Read 4-byte big-endian length
 	var size uint32
 	if err := binary.Read(jc.conn, binary.BigEndian, &size); err != nil {
 		return nil, fmt.Errorf("read length: %w", err)
@@ -482,13 +467,11 @@ func (jc *JudgeConn) recv() (Packet, error) {
 		return nil, fmt.Errorf("packet too large: %d bytes", size)
 	}
 
-	// Read compressed payload
 	compressed := make([]byte, size)
 	if _, err := io.ReadFull(jc.conn, compressed); err != nil {
 		return nil, fmt.Errorf("read payload: %w", err)
 	}
 
-	// Decompress
 	r, err := zlib.NewReader(bytes.NewReader(compressed))
 	if err != nil {
 		return nil, fmt.Errorf("zlib reader: %w", err)
@@ -500,7 +483,6 @@ func (jc *JudgeConn) recv() (Packet, error) {
 		return nil, fmt.Errorf("zlib read: %w", err)
 	}
 
-	// Parse JSON
 	var pkt Packet
 	if err := json.Unmarshal(decompressed, &pkt); err != nil {
 		return nil, fmt.Errorf("json unmarshal: %w", err)

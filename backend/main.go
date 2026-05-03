@@ -33,10 +33,8 @@ const (
 )
 
 func main() {
-	// --- Production mode ---
 	gin.SetMode(gin.ReleaseMode)
 
-	// --- DMOJ Judge Bridge ---
 	bridgeAddr := os.Getenv("BRIDGE_ADDR")
 	if bridgeAddr == "" {
 		bridgeAddr = ":9999"
@@ -57,21 +55,20 @@ func main() {
 	}
 	defer b.Stop()
 
-	// Load Judge Config
 	cfg, err := config.LoadJudgeConfig()
 	if err != nil {
 		log.Fatalf("failed to load judge config: %v", err)
 	}
 
-	// Create adapter and inject into handler
 	adapt := adapter.New(b, cfg)
 	handler.SetAdapter(adapt)
 
-	// --- Router setup (no default middleware — we add our own) ---
 	r := gin.New()
 
-	// --- Trusted proxies (CVE-2020-28483 mitigation) ---
-	// Only trust loopback by default. Set TRUSTED_PROXIES env var for your infra.
+	/*
+		Only trust loopback by default.
+		Set TRUSTED_PROXIES env var for your infra.
+	*/
 	trustedProxies := []string{"127.0.0.1", "::1"}
 	if envProxies := os.Getenv("TRUSTED_PROXIES"); envProxies != "" {
 		trustedProxies = strings.Split(envProxies, ",")
@@ -80,25 +77,28 @@ func main() {
 		log.Fatalf("failed to set trusted proxies: %v", err)
 	}
 
-	// --- Global middleware stack (order matters) ---
-	r.Use(gin.Recovery())                      // Panic recovery (always first)
-	r.Use(middleware.RequestLogger())           // Structured security logging
-	r.Use(middleware.SecurityHeaders())         // Security response headers (HSTS, CSP, etc.)
-	r.Use(middleware.MaxBodySize(maxBodyBytes)) // Request body size limit (DoS prevention)
+	r.Use(gin.Recovery())
+	r.Use(middleware.RequestLogger())
+	r.Use(middleware.SecurityHeaders())
+	r.Use(middleware.MaxBodySize(maxBodyBytes))
 
-	// CORS — set CORS_ORIGINS env var to a comma-separated list of allowed origins.
+	/*
+		CORS — set CORS_ORIGINS env var to a
+		comma-separated list of allowed origins.
+	*/
 	corsConfig := middleware.DefaultCORSConfig()
 	if envOrigins := os.Getenv("CORS_ORIGINS"); envOrigins != "" {
 		corsConfig.AllowOrigins = strings.Split(envOrigins, ",")
 	}
 	r.Use(middleware.CORS(corsConfig))
 
-	// Rate limiting
 	limiter := middleware.NewRateLimiter(ratePerSecond, rateBurst)
 	r.Use(limiter.Middleware())
 
-	// --- API key authentication ---
-	// Load valid API keys from env (comma-separated). In production, use a secrets manager.
+	/*
+		Load valid API keys from env (comma-separated).
+		In production, use a secrets manager.
+	*/
 	apiKeys := make(map[string]bool)
 	if envKeys := os.Getenv("API_KEYS"); envKeys != "" {
 		for _, k := range strings.Split(envKeys, ",") {
@@ -109,8 +109,6 @@ func main() {
 		}
 	}
 
-	// --- Routes ---
-	// Health check is unauthenticated (for load balancers / k8s probes)
 	r.GET("/health", func(c *gin.Context) {
 		judgeStatus := "disconnected"
 		if adapt.Available() {
@@ -122,7 +120,6 @@ func main() {
 		})
 	})
 
-	// Authenticated routes
 	authed := r.Group("/")
 	if len(apiKeys) > 0 {
 		authed.Use(middleware.APIKeyAuth(apiKeys))
@@ -132,7 +129,6 @@ func main() {
 	authed.POST("/submit", handler.Submit)
 	authed.POST("/run", handler.Run)
 
-	// --- HTTP server with explicit timeouts (Slowloris / connection exhaustion prevention) ---
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
@@ -146,7 +142,6 @@ func main() {
 		IdleTimeout:  idleTimeout,
 	}
 
-	// --- Graceful shutdown ---
 	go func() {
 		log.Printf("[INFO] Backend starting on :%s (release mode)", port)
 		log.Printf("[INFO] Bridge listening on %s for judge connections", bridgeAddr)
@@ -155,13 +150,14 @@ func main() {
 		}
 	}()
 
-	// Wait for interrupt signal
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 	<-quit
 	log.Println("[INFO] Shutting down server...")
 
-	// Give in-flight requests up to 30 seconds to complete
+	/*
+		Give in-flight requests up to 30 seconds to complete.
+	*/
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil {

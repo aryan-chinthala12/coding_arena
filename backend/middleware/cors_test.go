@@ -6,11 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Tests for CORS middleware.
- * Covers allowed/disallowed origins, preflight OPTIONS, missing origin,
- * empty allowlist, and Vary header propagation.
- */
+/*
+	Tests for CORS middleware.
+	Covers allowed/disallowed origins, preflight OPTIONS, missing origin,
+	empty allowlist, and Vary header propagation.
+*/
 
 var testCORSConfig = CORSConfig{
 	AllowOrigins: []string{"http://localhost:3000"},

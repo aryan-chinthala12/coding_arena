@@ -8,11 +8,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Tests for RateLimiter middleware.
- * Covers first request, burst capacity, exceeding limits, token refill,
- * and concurrent access under the race detector.
- */
+/*
+	Tests for RateLimiter middleware.
+	Covers first request, burst capacity, exceeding limits, token refill,
+	and concurrent access under the race detector.
+*/
 
 func TestRateLimiter_FirstRequest(t *testing.T) {
 	limiter := NewRateLimiter(10.0, 20)

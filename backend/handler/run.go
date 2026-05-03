@@ -24,8 +24,6 @@ func Run(c *gin.Context) {
 		return
 	}
 
-	// --- Input validation (same rules as Submit) ---
-
 	if len(req.Source) > maxCodeLength {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "code exceeds maximum allowed size",
@@ -47,7 +45,6 @@ func Run(c *gin.Context) {
 		return
 	}
 
-	// Generate run ID
 	b := make([]byte, submissionIDBytes)
 	if _, err := rand.Read(b); err != nil {
 		log.Printf("[ERROR] failed to generate run ID: %v", err)
@@ -59,7 +56,6 @@ func Run(c *gin.Context) {
 	log.Printf("[INFO] run request: id=%s language=%s problem=%s ip=%s",
 		runID, req.Language, req.ProblemID, c.ClientIP())
 
-	// If judge is available, grade it
 	if judgeAdapter != nil && judgeAdapter.Available() {
 		judgeResult, err := judgeAdapter.Submit(adapter.SubmissionRequest{
 			ProblemID:    req.ProblemID,
@@ -78,7 +74,6 @@ func Run(c *gin.Context) {
 			return
 		}
 
-		// Convert to frontend-expected format
 		testCases := make([]gin.H, 0, len(judgeResult.Cases))
 		for _, cr := range judgeResult.Cases {
 			testCases = append(testCases, gin.H{
@@ -102,7 +97,6 @@ func Run(c *gin.Context) {
 		return
 	}
 
-	// No judge — return a helpful message
 	c.JSON(http.StatusServiceUnavailable, gin.H{
 		"run_id":  runID,
 		"status":  "unavailable",

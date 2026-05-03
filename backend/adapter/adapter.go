@@ -28,8 +28,10 @@ func resolveExecutor(language string) (string, error) {
 	if !ok || len(chain) == 0 {
 		return "", fmt.Errorf("unsupported language: %s", language)
 	}
-	// For now, use the first in the chain.
-	// TODO: query judge for available executors and pick the first match.
+	/*
+		For now, use the first in the chain.
+		TODO: query judge for available executors and pick the first match.
+	*/
 	return chain[0], nil
 }
 
@@ -98,13 +100,11 @@ type CaseResult struct {
 
 // Submit sends a submission to the DMOJ judge and blocks until the result is ready.
 func (a *JudgeAdapter) Submit(req SubmissionRequest) (*SubmissionResult, error) {
-	// Map language
 	executorID, err := resolveExecutor(req.Language)
 	if err != nil {
 		return nil, err
 	}
 
-	// Apply defaults
 	timeLimit := req.TimeLimit
 	if timeLimit <= 0 {
 		timeLimit = DefaultTimeLimit

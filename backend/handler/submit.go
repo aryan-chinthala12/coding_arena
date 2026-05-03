@@ -51,9 +51,6 @@ func Submit(c *gin.Context) {
 		return
 	}
 
-	// --- Input validation ---
-
-	// Validate code length
 	if len(req.Code) > maxCodeLength {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "code exceeds maximum allowed size",
@@ -61,7 +58,6 @@ func Submit(c *gin.Context) {
 		return
 	}
 
-	// Validate language against whitelist (no user input reflected in response)
 	if !supportedLanguages[req.Language] {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "unsupported language",
@@ -69,7 +65,10 @@ func Submit(c *gin.Context) {
 		return
 	}
 
-	// Validate problem_id format (prevent injection via path traversal, NoSQL, etc.)
+	/*
+		Validate problem_id format to prevent
+		path traversal and injection.
+	*/
 	if len(req.ProblemID) > maxProblemIDLength || !problemIDPattern.MatchString(req.ProblemID) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "invalid problem_id: must be 1-64 lowercase alphanumeric characters or hyphens",
@@ -77,7 +76,6 @@ func Submit(c *gin.Context) {
 		return
 	}
 
-	// --- Generate collision-safe submission ID (128-bit / UUID-equivalent entropy) ---
 	b := make([]byte, submissionIDBytes)
 	if _, err := rand.Read(b); err != nil {
 		log.Printf("[ERROR] failed to generate submission ID: %v", err)
@@ -86,13 +84,13 @@ func Submit(c *gin.Context) {
 	}
 	submissionID := "sub_" + hex.EncodeToString(b)
 
-	// Log the submission for audit trail (no code content logged to avoid data leaks)
 	log.Printf("[INFO] submission received: id=%s language=%s problem=%s ip=%s",
 		submissionID, req.Language, req.ProblemID, c.ClientIP())
 
-	// --- Judge integration ---
-	// If the judge adapter is available with a connected judge, grade the submission.
-	// Otherwise, queue it (graceful degradation).
+	/*
+		If the judge adapter is available with a connected judge, grade the submission.
+		Otherwise, queue it (graceful degradation).
+	*/
 	resp := model.SubmitResponse{
 		ID:        submissionID,
 		ProblemID: req.ProblemID,
@@ -100,7 +98,6 @@ func Submit(c *gin.Context) {
 	}
 
 	if judgeAdapter != nil && judgeAdapter.Available() {
-		// Send to judge synchronously (blocks until grading completes)
 		judgeResult, err := judgeAdapter.Submit(adapter.SubmissionRequest{
 			ProblemID:    req.ProblemID,
 			Language:     req.Language,
@@ -116,7 +113,6 @@ func Submit(c *gin.Context) {
 			return
 		}
 
-		// Convert adapter result to API model
 		resp.Status = "graded"
 		resp.Message = judgeResult.Status
 		resp.Result = &model.JudgeResult{
@@ -146,7 +142,6 @@ func Submit(c *gin.Context) {
 		return
 	}
 
-	// No judge available — accept and queue
 	resp.Status = "queued"
 	resp.Message = "submission received, pending judge execution"
 	c.JSON(http.StatusAccepted, resp)

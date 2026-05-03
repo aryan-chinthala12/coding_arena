@@ -161,8 +161,6 @@ func TestSubmit_LargePayload(t *testing.T) {
 	}
 }
 
-// --- Security-specific tests ---
-
 func TestSubmit_CodeTooLarge(t *testing.T) {
 	r := setupRouter()
 	// Generate code exceeding 512 KB
@@ -255,8 +253,6 @@ func TestSubmit_UnsupportedLanguageNoReflection(t *testing.T) {
 		t.Fatal("user input was reflected in error response — XSS risk")
 	}
 }
-
-// --- Existing negative tests ---
 
 func TestSubmit_MissingCode(t *testing.T) {
 	r := setupRouter()

@@ -9,11 +9,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Test helpers for middleware tests.
- * Provides router setup, request builders, and assertion utilities
- * so individual test files stay focused on behavior.
- */
+/*
+	Test helpers for middleware tests.
+	Provides router setup, request builders, and assertion utilities
+	so individual test files stay focused on behavior.
+*/
 
 func setupTestRouter() *gin.Engine {
 	gin.SetMode(gin.TestMode)
