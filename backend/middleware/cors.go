@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -42,11 +43,10 @@ func CORS(cfg CORSConfig) gin.HandlerFunc {
 			c.Header("Access-Control-Allow-Origin", origin)
 			c.Header("Access-Control-Allow-Methods", methods)
 			c.Header("Access-Control-Allow-Headers", headers)
-			c.Header("Access-Control-Max-Age", string(rune(cfg.MaxAge)))
+			c.Header("Access-Control-Max-Age", strconv.Itoa(cfg.MaxAge))
 			c.Header("Vary", "Origin")
 		}
 
-		// Handle preflight
 		if c.Request.Method == http.MethodOptions {
 			c.AbortWithStatus(http.StatusNoContent)
 			return

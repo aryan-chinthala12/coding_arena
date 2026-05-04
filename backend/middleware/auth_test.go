@@ -6,10 +6,10 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Tests for APIKeyAuth middleware.
- * Validates key presence, correctness, whitespace trimming, and case sensitivity.
- */
+/*
+	Tests for APIKeyAuth middleware.
+	Validates key presence, correctness, whitespace trimming, and case sensitivity.
+*/
 
 func TestAPIKeyAuth_ValidKey(t *testing.T) {
 	validKeys := map[string]bool{"test-key-123": true, "another-key": true}

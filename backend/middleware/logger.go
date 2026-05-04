@@ -22,7 +22,10 @@ func RequestLogger() gin.HandlerFunc {
 		path := c.Request.URL.Path
 		userAgent := c.Request.UserAgent()
 
-		// Log at WARN level for client/server errors to make them easy to grep
+		/*
+			Log at WARN level for client/server errors
+			to make them easy to grep.
+		*/
 		if status >= 400 {
 			log.Printf("[WARN] %s %s | %d | %v | ip=%s | ua=%s | errors=%s",
 				method, path, status, latency, clientIP, userAgent, c.Errors.ByType(gin.ErrorTypePrivate).String())

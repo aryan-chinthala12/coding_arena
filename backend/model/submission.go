@@ -47,3 +47,22 @@ type JudgeCaseResult struct {
 	Total    float64 `json:"total_points"`
 	Feedback string  `json:"feedback,omitempty"`
 }
+
+// RunResponse represents the result of a run/test request.
+type RunResponse struct {
+	RunID     string         `json:"run_id"`
+	Status    string         `json:"status"`
+	Message   string         `json:"message"`
+	TestCases []RunCaseResult `json:"test_cases,omitempty"`
+}
+
+// RunCaseResult holds a single test case result for the run endpoint.
+type RunCaseResult struct {
+	Name           string  `json:"name"`
+	Status         string  `json:"status"`
+	Time           float64 `json:"time"`
+	MemoryKB       int64   `json:"memory_kb"`
+	Input          string  `json:"input"`
+	ExpectedOutput string  `json:"expected_output"`
+	ActualOutput   string  `json:"actual_output"`
+}

@@ -10,11 +10,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Tests for RequestLogger middleware.
- * Verifies log level (INFO for 2xx, WARN for 4xx/5xx) and log content
- * (method, path, status code, IP, latency).
- */
+/*
+	Tests for RequestLogger middleware.
+	Verifies log level (INFO for 2xx, WARN for 4xx/5xx) and log content
+	(method, path, status code, IP, latency).
+*/
 
 func TestRequestLogger_SuccessfulRequest(t *testing.T) {
 	var buf bytes.Buffer

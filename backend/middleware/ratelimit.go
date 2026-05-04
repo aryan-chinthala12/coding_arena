@@ -65,7 +65,6 @@ func (rl *RateLimiter) allow(ip string) bool {
 		return true
 	}
 
-	// Refill tokens based on elapsed time
 	elapsed := now.Sub(c.lastSeen).Seconds()
 	c.tokens += elapsed * rl.rate
 	if c.tokens > float64(rl.burst) {

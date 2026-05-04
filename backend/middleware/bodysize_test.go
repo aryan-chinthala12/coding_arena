@@ -7,11 +7,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Tests for MaxBodySize middleware.
- * Handlers must read the body (GetRawData) for MaxBytesReader to trigger,
- * otherwise the limit is never enforced.
- */
+/*
+	Tests for MaxBodySize middleware.
+	Handlers must read the body (GetRawData) for MaxBytesReader to trigger,
+	otherwise the limit is never enforced.
+*/
 
 func TestMaxBodySize_UnderLimit(t *testing.T) {
 	router := setupTestRouter()

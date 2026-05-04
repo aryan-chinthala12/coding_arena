@@ -6,11 +6,11 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Tests for SecurityHeaders middleware.
- * Verifies all 8 security headers are present with correct values,
- * including on error (404) responses.
- */
+/*
+	Tests for SecurityHeaders middleware.
+	Verifies all 8 security headers are present with correct values,
+	including on error (404) responses.
+*/
 
 func TestSecurityHeaders_AllPresent(t *testing.T) {
 	router := setupTestRouter()

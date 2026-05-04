@@ -8,12 +8,12 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-/**
- * Integration tests for middleware stack.
- * Verifies correct behavior when multiple middleware are combined,
- * including execution ordering, error propagation, and the full
- * production-like stack from main.go.
- */
+/*
+	Integration tests for middleware stack.
+	Verifies correct behavior when multiple middleware are combined,
+	including execution ordering, error propagation, and the full
+	production-like stack from main.go.
+*/
 
 func TestMiddlewareIntegration(t *testing.T) {
 	gin.SetMode(gin.TestMode)
@@ -105,10 +105,10 @@ func TestMiddlewareIntegration(t *testing.T) {
 	})
 }
 
-/**
- * TestMiddlewareOrder verifies that middleware execution order
- * determines which middleware handles the request first.
- */
+/*
+	TestMiddlewareOrder verifies that middleware execution order
+	determines which middleware handles the request first.
+*/
 func TestMiddlewareOrder(t *testing.T) {
 	t.Run("RateLimiter_Before_Auth", func(t *testing.T) {
 		limiter := NewRateLimiter(1.0, 1)

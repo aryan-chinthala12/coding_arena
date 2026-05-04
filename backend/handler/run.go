@@ -13,7 +13,6 @@ import (
 )
 
 // Run handles POST /run — runs code against sample test cases.
-// Functionally similar to Submit but uses the "run" semantic for the frontend.
 func Run(c *gin.Context) {
 	var req model.RunRequest
 
@@ -24,30 +23,10 @@ func Run(c *gin.Context) {
 		return
 	}
 
-	// --- Input validation (same rules as Submit) ---
-
-	if len(req.Source) > maxCodeLength {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "code exceeds maximum allowed size",
-		})
+	if abortWithValidationError(c, validateInput(req.Source, req.Language, req.ProblemID)) {
 		return
 	}
 
-	if !supportedLanguages[req.Language] {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "unsupported language",
-		})
-		return
-	}
-
-	if len(req.ProblemID) > maxProblemIDLength || !problemIDPattern.MatchString(req.ProblemID) {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "invalid problem_id: must be 1-64 lowercase alphanumeric characters or hyphens",
-		})
-		return
-	}
-
-	// Generate run ID
 	b := make([]byte, submissionIDBytes)
 	if _, err := rand.Read(b); err != nil {
 		log.Printf("[ERROR] failed to generate run ID: %v", err)
@@ -59,7 +38,6 @@ func Run(c *gin.Context) {
 	log.Printf("[INFO] run request: id=%s language=%s problem=%s ip=%s",
 		runID, req.Language, req.ProblemID, c.ClientIP())
 
-	// If judge is available, grade it
 	if judgeAdapter != nil && judgeAdapter.Available() {
 		judgeResult, err := judgeAdapter.Submit(adapter.SubmissionRequest{
 			ProblemID:    req.ProblemID,
@@ -70,42 +48,37 @@ func Run(c *gin.Context) {
 
 		if err != nil {
 			log.Printf("[ERROR] run failed for %s: %v", runID, err)
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"run_id":  runID,
-				"status":  "error",
-				"message": "judge execution failed",
+			c.JSON(http.StatusInternalServerError, model.RunResponse{
+				RunID:   runID,
+				Status:  "error",
+				Message: "judge execution failed",
 			})
 			return
 		}
 
-		// Convert to frontend-expected format
-		testCases := make([]gin.H, 0, len(judgeResult.Cases))
+		testCases := make([]model.RunCaseResult, 0, len(judgeResult.Cases))
 		for _, cr := range judgeResult.Cases {
-			testCases = append(testCases, gin.H{
-				"name":            fmt.Sprintf("Test Case %d", cr.Position),
-				"status":          cr.Status,
-				"time":            cr.Time,
-				"memory_kb":       cr.Memory,
-				"input":           "",
-				"expected_output": "",
-				"actual_output":   cr.Feedback,
+			testCases = append(testCases, model.RunCaseResult{
+				Name:         fmt.Sprintf("Test Case %d", cr.Position),
+				Status:       cr.Status,
+				Time:         cr.Time,
+				MemoryKB:     cr.Memory,
+				ActualOutput: cr.Feedback,
 			})
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"run_id":     runID,
-			"status":     judgeResult.Status,
-			"message":    judgeResult.Status,
-			"test_cases": testCases,
-			"timestamp":  0,
+		c.JSON(http.StatusOK, model.RunResponse{
+			RunID:     runID,
+			Status:    judgeResult.Status,
+			Message:   judgeResult.Status,
+			TestCases: testCases,
 		})
 		return
 	}
 
-	// No judge — return a helpful message
-	c.JSON(http.StatusServiceUnavailable, gin.H{
-		"run_id":  runID,
-		"status":  "unavailable",
-		"message": "no judge connected — run unavailable",
+	c.JSON(http.StatusServiceUnavailable, model.RunResponse{
+		RunID:   runID,
+		Status:  "unavailable",
+		Message: "no judge connected — run unavailable",
 	})
 }
