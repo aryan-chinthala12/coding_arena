@@ -1,5 +1,21 @@
 package model
 
+import "time"
+
+// SubmissionResponse represents a submission in the submissions list.
+// It intentionally excludes source code, compile errors, test cases, and IP.
+type SubmissionResponse struct {
+	ID          string    `json:"id"`
+	ProblemID   string    `json:"problem_id"`
+	Language    string    `json:"language"`
+	Verdict     string    `json:"verdict"`
+	Points      float64   `json:"points"`
+	TotalPoints float64   `json:"total_points"`
+	TotalTime   float64   `json:"total_time"`
+	MaxMemory   int64     `json:"max_memory_kb"`
+	CreatedAt   time.Time `json:"created_at"`
+}
+
 // SubmitRequest represents an incoming code submission.
 type SubmitRequest struct {
 	Code      string `json:"code" binding:"required"`
@@ -26,13 +42,13 @@ type SubmitResponse struct {
 
 // JudgeResult holds the detailed grading result from the DMOJ judge.
 type JudgeResult struct {
-	Verdict      string           `json:"verdict"`
-	CompileError string           `json:"compile_error,omitempty"`
+	Verdict      string            `json:"verdict"`
+	CompileError string            `json:"compile_error,omitempty"`
 	Cases        []JudgeCaseResult `json:"cases,omitempty"`
-	TotalTime    float64          `json:"total_time"`
-	MaxMemory    int64            `json:"max_memory_kb"`
-	Points       float64          `json:"points"`
-	TotalPoints  float64          `json:"total_points"`
+	TotalTime    float64           `json:"total_time"`
+	MaxMemory    int64             `json:"max_memory_kb"`
+	Points       float64           `json:"points"`
+	TotalPoints  float64           `json:"total_points"`
 }
 
 // JudgeCaseResult holds the result of a single test case.
@@ -48,9 +64,9 @@ type JudgeCaseResult struct {
 
 // RunResponse represents the result of a run/test request.
 type RunResponse struct {
-	RunID     string         `json:"run_id"`
-	Status    string         `json:"status"`
-	Message   string         `json:"message"`
+	RunID     string          `json:"run_id"`
+	Status    string          `json:"status"`
+	Message   string          `json:"message"`
 	TestCases []RunCaseResult `json:"test_cases,omitempty"`
 }
 
